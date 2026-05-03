@@ -54,7 +54,7 @@ class AnimationWindow extends JFrame {
     private void startClassic() {
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject.ELEMENTS);
+        panel.initElements(ThreadingProject_P1.ELEMENTS);
         classicThreads = new ArrayList<>();
         
         for (MovingElement el : panel.getElements()) {
@@ -68,7 +68,7 @@ class AnimationWindow extends JFrame {
     private void startExecutor() {
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject.ELEMENTS);
+        panel.initElements(ThreadingProject_P1.ELEMENTS);
         
         // # wymog glowny: podstawowy Executor
         basicExecutor = command -> new Thread(command).start();
@@ -81,10 +81,10 @@ class AnimationWindow extends JFrame {
     private void startExecutorService() {
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject.ELEMENTS);
+        panel.initElements(ThreadingProject_P1.ELEMENTS);
         
         // # wymog 3: pula watkow
-        executorService = Executors.newFixedThreadPool(ThreadingProject.POOL_SIZE);
+        executorService = Executors.newFixedThreadPool(ThreadingProject_P1.POOL_SIZE);
         
         for (MovingElement el : panel.getElements()) {
             executorService.submit(new WorkerTask(el, panel, this));
@@ -94,10 +94,10 @@ class AnimationWindow extends JFrame {
     private void startScheduled() {
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject.ELEMENTS);
+        panel.initElements(ThreadingProject_P1.ELEMENTS);
         
         // # wymog glowny: ScheduledExecutorService
-        scheduledExecutor = Executors.newScheduledThreadPool(ThreadingProject.POOL_SIZE);
+        scheduledExecutor = Executors.newScheduledThreadPool(ThreadingProject_P1.POOL_SIZE);
         
         for (MovingElement el : panel.getElements()) {
             scheduledExecutor.scheduleAtFixedRate(() -> {
