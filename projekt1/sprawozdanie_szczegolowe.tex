@@ -1,0 +1,121 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage{fontspec}
+\usepackage{polyglossia}
+\setmainlanguage{polish}
+\usepackage{geometry}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{titlesec}
+
+\geometry{margin=2cm}
+
+\titleformat{\section}{\large\bfseries}{\thesection.}{0.5em}{}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstset{
+    language=Java,
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\small,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\title{\textbf{Szczegółowe Sprawozdanie z Projektu Nr 1} \\ \Large Wielowątkowość wysokopoziomowa w języku Java}
+\author{Analiza porównawcza technik klasycznych i wysokopoziomowych}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+
+\tableofcontents
+\newpage
+
+\section{Cel i Zakres Projektu}
+Głównym celem projektu było przeprowadzenie dogłębnej analizy porównawczej mechanizmów współbieżności w języku Java. Zbadano:
+\begin{itemize}
+    \item Podejście klasyczne: Bezpośrednie użycie interfejsu \texttt{Runnable} oraz klasy \texttt{Thread}.
+    \item Podejście wysokopoziomowe: Wykorzystanie interfejsów \texttt{Executor}, \texttt{ExecutorService} oraz \texttt{ScheduledExecutorService} z pakietu \texttt{java.util.concurrent}.
+\end{itemize}
+
+\section{Weryfikacja Zgodności z Poleceniem}
+Analiza przykładowego rozwiązania wykazuje pełną zgodność z wymaganiami określonymi w pliku \texttt{polecenie.txt}:
+\begin{enumerate}
+    \item \textbf{Zadanie programistyczne}: Zaimplementowano animację 100 elementów graficznych poruszających się po panelu Swing. Dodatkowo, każdy wątek wykonuje intensywne obliczenia matematyczne (\texttt{heavyCalculations}), co pozwala na realne obciążenie CPU.
+    \item \textbf{Implementacja klasyczna}: Metoda \texttt{startClassic()} tworzy listę obiektów \texttt{Thread}, z których każdy zarządza jednym zadaniem.
+    \item \textbf{Implementacja wysokopoziomowa}: Metody \texttt{startExecutorService()} oraz \texttt{startScheduled()} wykorzystują pule wątków (\texttt{ThreadPoolExecutor}) o stałym rozmiarze (domyślnie 4).
+    \item \textbf{Analiza profilerem}: Przeprowadzono pomiary z wykorzystaniem narzędzia VisualVM 2.2.1 oraz narzędzi systemowych JDK (jstack, jstat).
+\end{enumerate}
+
+\section{Szczegóły Implementacji}
+
+\subsection{Logika Zadania (WorkerTask)}
+Każde zadanie wykonuje pętlę, w której zamiast pasywnego oczekiwania (\texttt{sleep}), wywoływana jest funkcja obciążająca procesor:
+\begin{lstlisting}
+public static void heavyCalculations() {
+    double wynik = 0;
+    for (int i = 0; i < 50000; i++) {
+        wynik += Math.sin(i) * Math.cos(i);
+    }
+}
+\end{lstlisting}
+To podejście pozwala na badanie stanów wątków w warunkach wysokiej rywalizacji o zasoby.
+
+\subsection{Pula Wątków (ExecutorService)}
+W odróżnieniu od metody klasycznej, gdzie powstaje 100 wątków, w metodzie wysokopoziomowej zadania są kolejkowane do puli 4 wątków.
+\begin{lstlisting}
+executorService = Executors.newFixedThreadPool(4);
+for (MovingElement el : panel.getElements()) {
+    executorService.submit(new WorkerTask(el, panel, this));
+}
+\end{lstlisting}
+
+\section{Analiza Profilerem (VisualVM)}
+
+\subsection{Zużycie Procesora (CPU Usage)}
+\begin{itemize}
+    \item \textbf{Metoda Klasyczna}: Gwałtowny wzrost obciążenia CPU. System operacyjny musi zarządzać przełączaniem kontekstu dla 100 wątków konkurujących o rdzenie procesora. Widoczny narzut na zarządzanie wątkami.
+    \item \textbf{ExecutorService (FixedThreadPool)}: Obciążenie stabilizuje się na poziomie odpowiadającym liczbie rdzeni/wątków w puli. Praca jest wykonywana płynnie, bez nadmiernego przełączania kontekstu.
+\end{itemize}
+
+\subsection{Stany Wątków (Thread States)}
+Analiza zrzutu wątków (\texttt{jstack}) wykazała:
+\begin{table}[h]
+\centering
+\begin{tabular}{@{}lll@{}}
+\toprule
+\textbf{Cecha} & \textbf{Klasycznie} & \textbf{Wysokopoziomowo} \\ \midrule
+Liczba wątków robotników & 100 & 4 (stała) \\
+Stan podczas pracy & RUNNABLE & RUNNABLE \\
+Narzut pamięciowy & Wysoki (stack dla każdego wątku) & Niski (stała liczba stosów) \\
+Zarządzanie kończeniem & Ręczne (interrupty w pętli) & Uproszczone (\texttt{shutdownNow()}) \\ \bottomrule
+\end{tabular}
+\caption{Porównanie charakterystyki wątków}
+\end{table}
+
+\section{Wnioski Końcowe}
+1. \textbf{Wydajność}: Pule wątków są znacznie bardziej efektywne przy dużej liczbie drobnych zadań. Zapobiegają one zjawisku \textit{thread starvation} oraz nadmiernemu zużyciu pamięci RAM.
+2. \textbf{Skalowalność}: API \texttt{java.util.concurrent} pozwala na łatwą zmianę strategii wykonywania zadań bez modyfikacji logiki samego zadania.
+3. \textbf{Użyteczność}: \texttt{ScheduledExecutorService} jest jedynym rozsądnym wyborem dla zadań cyklicznych, zastępując błędogenne pętle z \texttt{Thread.sleep()}.
+
+\end{document}
