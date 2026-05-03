@@ -23,7 +23,7 @@ class Animacja extends JFrame {
 
     public Animacja() { //konstruktor GUI z przypisaniem metod do przycisków
         setTitle("Animacja obciazajaca CPU");
-        setSize(1000, 600);
+        setSize(1200, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
         panel = new PanelAnimacji();
@@ -50,7 +50,7 @@ class Animacja extends JFrame {
         add(controls, BorderLayout.SOUTH);
     }
     
-    private void startThreads() { // runnable + thread: tworzy nowy obiekt Thread dla każdego elementu
+    private void startThreads() { // thread + runnable(w KrokAnimacji): tworzy nowy obiekt Thread dla każdego elementu
         stopAll();
         running = true;
         panel.initElements(ThreadingProject_P1.elementy);
@@ -118,7 +118,7 @@ class Animacja extends JFrame {
     
     public boolean isRunning() { return running; }
     
-    public static void heavyCalculations() { // obciążenie procesora funkcjami tryg.
+    public static void heavyCalculations() { // sztuczne obciążenie procesora funkcjami sinus*tangens
         double result = 0;
         for (int i = 0; i < 50000; i++) {
             result += Math.sin(i) * Math.tan(i);
@@ -127,21 +127,21 @@ class Animacja extends JFrame {
 }
 
 class KrokAnimacji implements Runnable {
-    private RuchomyElement el;
+    private RuchomyElement klocek;
     private PanelAnimacji panel;
     private Animacja window;
     
     public KrokAnimacji(RuchomyElement el, PanelAnimacji panel, Animacja window) {
-        this.el = el;
+        this.klocek = el;
         this.panel = panel;
         this.window = window;
     }
     
     @Override
     public void run() {
-        while (window.isRunning() && el.x < panel.getWidth() - 20 && !Thread.currentThread().isInterrupted()) {
+        while (window.isRunning() && klocek.x < panel.getWidth() - 20 && !Thread.currentThread().isInterrupted()) {
             Animacja.heavyCalculations();
-            el.x += 2;
+            klocek.x += 2;
             SwingUtilities.invokeLater(panel::repaint);
         }
     }
