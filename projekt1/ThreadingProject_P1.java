@@ -5,29 +5,28 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class ThreadingProject_P1 {
-    // # config
-    public static final int ELEMENTS = 100;
-    public static final int POOL_SIZE = 4;
+    public static final int elementy = 100;
+    public static final int pula = 4; //rozmiar puli wątków dla ExecutorService
     
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new AnimationWindow().setVisible(true));
+        SwingUtilities.invokeLater(() -> new Animacja().setVisible(true));
     }
 }
 
-class AnimationWindow extends JFrame {
-    private AnimationPanel panel;
+class Animacja extends JFrame { 
+    private PanelAnimacji panel;
     private Executor basicExecutor;
     private ExecutorService executorService;
     private ScheduledExecutorService scheduledExecutor;
-    private List<Thread> classicThreads;
+    private List<Thread> klasyczneThreads;
     private volatile boolean running = false;
 
-    public AnimationWindow() {
+    public Animacja() { //konstruktor GUI z przypisaniem metod do przycisków
         setTitle("Animacja obciazajaca CPU");
-        setSize(800, 600);
+        setSize(1000, 600);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         
-        panel = new AnimationPanel();
+        panel = new PanelAnimacji();
         add(panel, BorderLayout.CENTER);
         
         JPanel controls = new JPanel();
@@ -37,7 +36,7 @@ class AnimationWindow extends JFrame {
         JButton btnScheduled = new JButton("ScheduledExecutor");
         JButton btnStop = new JButton("Stop");
         
-        btnThread.addActionListener(e -> startClassic());
+        btnThread.addActionListener(e -> startThreads());
         btnExecutor.addActionListener(e -> startExecutor());
         btnExecService.addActionListener(e -> startExecutorService());
         btnScheduled.addActionListener(e -> startScheduled());
@@ -51,55 +50,51 @@ class AnimationWindow extends JFrame {
         add(controls, BorderLayout.SOUTH);
     }
     
-    private void startClassic() {
+    private void startThreads() { // runnable + thread: tworzy nowy obiekt Thread dla każdego elementu
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject_P1.ELEMENTS);
-        classicThreads = new ArrayList<>();
+        panel.initElements(ThreadingProject_P1.elementy);
+        klasyczneThreads = new ArrayList<>();
         
-        for (MovingElement el : panel.getElements()) {
-            // # wymog 2: klasyczna technika
-            Thread t = new Thread(new WorkerTask(el, panel, this));
-            classicThreads.add(t);
+        for (RuchomyElement element : panel.getElements()) {
+            Thread t = new Thread(new KrokAnimacji(element, panel, this));
+            klasyczneThreads.add(t);
             t.start();
         }
     }
     
-    private void startExecutor() {
+    private void startExecutor() { // metoda z interfejsem Executor - manualnie startuje nowe wątki
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject_P1.ELEMENTS);
+        panel.initElements(ThreadingProject_P1.elementy);
         
-        // # wymog glowny: podstawowy Executor
         basicExecutor = command -> new Thread(command).start();
         
-        for (MovingElement el : panel.getElements()) {
-            basicExecutor.execute(new WorkerTask(el, panel, this));
+        for (RuchomyElement el : panel.getElements()) {
+            basicExecutor.execute(new KrokAnimacji(el, panel, this));
         }
     }
     
-    private void startExecutorService() {
+    private void startExecutorService() { // metoda wysokopoziomowa z ExecutorService delegująca ruch elementów do stałej puli wątków za pomocą Exectuor Service
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject_P1.ELEMENTS);
+        panel.initElements(ThreadingProject_P1.elementy);
         
-        // # wymog 3: pula watkow
-        executorService = Executors.newFixedThreadPool(ThreadingProject_P1.POOL_SIZE);
+        executorService = Executors.newFixedThreadPool(ThreadingProject_P1.pula);
         
-        for (MovingElement el : panel.getElements()) {
-            executorService.submit(new WorkerTask(el, panel, this));
+        for (RuchomyElement el : panel.getElements()) {
+            executorService.submit(new KrokAnimacji(el, panel, this));
         }
     }
     
-    private void startScheduled() {
+    private void startScheduled() { // metoda używająca ScheduledExectuorService do planowania cyklicznych ruchów z opóźnieniem
         stopAll();
         running = true;
-        panel.initElements(ThreadingProject_P1.ELEMENTS);
+        panel.initElements(ThreadingProject_P1.elementy);
         
-        // # wymog glowny: ScheduledExecutorService
-        scheduledExecutor = Executors.newScheduledThreadPool(ThreadingProject_P1.POOL_SIZE);
+        scheduledExecutor = Executors.newScheduledThreadPool(ThreadingProject_P1.pula);
         
-        for (MovingElement el : panel.getElements()) {
+        for (RuchomyElement el : panel.getElements()) {
             scheduledExecutor.scheduleAtFixedRate(() -> {
                 if (running && el.x < panel.getWidth() - 20) {
                     heavyCalculations();
@@ -110,11 +105,12 @@ class AnimationWindow extends JFrame {
         }
     }
     
-    private void stopAll() {
+
+    private void stopAll() { // metoda przerywająca działanie, czyszcząca listy i zatrzumująca pule wątków
         running = false;
-        if (classicThreads != null) {
-            classicThreads.forEach(Thread::interrupt);
-            classicThreads.clear();
+        if (klasyczneThreads != null) {
+            klasyczneThreads.forEach(Thread::interrupt);
+            klasyczneThreads.clear();
         }
         if (executorService != null) executorService.shutdownNow();
         if (scheduledExecutor != null) scheduledExecutor.shutdownNow();
@@ -122,21 +118,20 @@ class AnimationWindow extends JFrame {
     
     public boolean isRunning() { return running; }
     
-    // # symulacja duzego obciazenia CPU
-    public static void heavyCalculations() {
+    public static void heavyCalculations() { // obciążenie procesora funkcjami tryg.
         double result = 0;
         for (int i = 0; i < 50000; i++) {
-            result += Math.sin(i) * Math.cos(i);
+            result += Math.sin(i) * Math.tan(i);
         }
     }
 }
 
-class WorkerTask implements Runnable {
-    private MovingElement el;
-    private AnimationPanel panel;
-    private AnimationWindow window;
+class KrokAnimacji implements Runnable {
+    private RuchomyElement el;
+    private PanelAnimacji panel;
+    private Animacja window;
     
-    public WorkerTask(MovingElement el, AnimationPanel panel, AnimationWindow window) {
+    public KrokAnimacji(RuchomyElement el, PanelAnimacji panel, Animacja window) {
         this.el = el;
         this.panel = panel;
         this.window = window;
@@ -146,38 +141,38 @@ class WorkerTask implements Runnable {
     public void run() {
         while (window.isRunning() && el.x < panel.getWidth() - 20 && !Thread.currentThread().isInterrupted()) {
             // # obciazenie zamiast spania
-            AnimationWindow.heavyCalculations();
+            Animacja.heavyCalculations();
             el.x += 2;
             SwingUtilities.invokeLater(panel::repaint);
         }
     }
 }
 
-class AnimationPanel extends JPanel {
-    private List<MovingElement> elements = new CopyOnWriteArrayList<>();
+class PanelAnimacji extends JPanel {
+    private List<RuchomyElement> elements = new CopyOnWriteArrayList<>();
     
     public void initElements(int count) {
         elements.clear();
         for (int i = 0; i < count; i++) {
-            elements.add(new MovingElement(10, 10 + (i * 5)));
+            elements.add(new RuchomyElement(10, 10 + (i * 5)));
         }
         repaint();
     }
     
-    public List<MovingElement> getElements() { return elements; }
+    public List<RuchomyElement> getElements() { return elements; }
     
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        for (MovingElement el : elements) {
+        for (RuchomyElement el : elements) {
             g.fillRect(el.x, el.y, 10, 4);
         }
     }
 }
 
-class MovingElement {
+class RuchomyElement {
     int x, y;
-    public MovingElement(int x, int y) {
+    public RuchomyElement(int x, int y) {
         this.x = x;
         this.y = y;
     }
