@@ -56,7 +56,7 @@ class Animacja extends JFrame {
         panel.initElements(ThreadingProject_P1.elementy);
         klasyczneThreads = new ArrayList<>();
         
-        for (RuchomyElement element : panel.getElements()) {
+        for (RuchomyElement element : panel.getElementy()) {
             Thread t = new Thread(new KrokAnimacji(element, panel, this));
             klasyczneThreads.add(t);
             t.start();
@@ -70,7 +70,7 @@ class Animacja extends JFrame {
         
         basicExecutor = command -> new Thread(command).start();
         
-        for (RuchomyElement el : panel.getElements()) {
+        for (RuchomyElement el : panel.getElementy()) {
             basicExecutor.execute(new KrokAnimacji(el, panel, this));
         }
     }
@@ -82,7 +82,7 @@ class Animacja extends JFrame {
         
         executorService = Executors.newFixedThreadPool(ThreadingProject_P1.pula);
         
-        for (RuchomyElement el : panel.getElements()) {
+        for (RuchomyElement el : panel.getElementy()) {
             executorService.submit(new KrokAnimacji(el, panel, this));
         }
     }
@@ -94,17 +94,16 @@ class Animacja extends JFrame {
         
         scheduledExecutor = Executors.newScheduledThreadPool(ThreadingProject_P1.pula);
         
-        for (RuchomyElement el : panel.getElements()) {
+        for (RuchomyElement el : panel.getElementy()) {
             scheduledExecutor.scheduleAtFixedRate(() -> {
                 if (running && el.x < panel.getWidth() - 20) {
-                    heavyCalculations();
+                    obciazenie();
                     el.x += 2;
                     panel.repaint();
                 }
             }, 0, 10, TimeUnit.MILLISECONDS);
         }
     }
-    
 
     private void stopAll() { // metoda przerywająca działanie, czyszcząca listy i zatrzumująca pule wątków
         running = false;
@@ -118,10 +117,10 @@ class Animacja extends JFrame {
     
     public boolean isRunning() { return running; }
     
-    public static void heavyCalculations() { // sztuczne obciążenie procesora funkcjami sinus*tangens
-        double result = 0;
+    public static void obciazenie() { // sztuczne obciążenie procesora funkcjami sinus*tangens
+        double trygonometrysta = 0;
         for (int i = 0; i < 50000; i++) {
-            result += Math.sin(i) * Math.tan(i);
+            trygonometrysta += Math.sin(i) * Math.tan(i);
         }
     }
 }
@@ -140,7 +139,7 @@ class KrokAnimacji implements Runnable {
     @Override
     public void run() {
         while (window.isRunning() && klocek.x < panel.getWidth() - 20 && !Thread.currentThread().isInterrupted()) {
-            Animacja.heavyCalculations();
+            Animacja.obciazenie();
             klocek.x += 2;
             SwingUtilities.invokeLater(panel::repaint);
         }
@@ -148,22 +147,22 @@ class KrokAnimacji implements Runnable {
 }
 
 class PanelAnimacji extends JPanel {
-    private List<RuchomyElement> elements = new CopyOnWriteArrayList<>();
+    private List<RuchomyElement> elementy = new CopyOnWriteArrayList<>();
     
     public void initElements(int count) {
-        elements.clear();
+        elementy.clear();
         for (int i = 0; i < count; i++) {
-            elements.add(new RuchomyElement(10, 10 + (i * 5)));
+            elementy.add(new RuchomyElement(10, 10 + (i * 5)));
         }
         repaint();
     }
     
-    public List<RuchomyElement> getElements() { return elements; }
+    public List<RuchomyElement> getElementy() { return elementy; }
     
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        for (RuchomyElement el : elements) {
+        for (RuchomyElement el : elementy) {
             g.fillRect(el.x, el.y, 10, 4);
         }
     }
