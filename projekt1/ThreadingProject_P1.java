@@ -140,7 +140,6 @@ class KrokAnimacji implements Runnable {
     @Override
     public void run() {
         while (window.isRunning() && el.x < panel.getWidth() - 20 && !Thread.currentThread().isInterrupted()) {
-            // # obciazenie zamiast spania
             Animacja.heavyCalculations();
             el.x += 2;
             SwingUtilities.invokeLater(panel::repaint);
