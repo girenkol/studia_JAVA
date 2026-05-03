@@ -62,20 +62,20 @@ Głównym celem projektu było przeprowadzenie dogłębnej analizy porównawczej
 Analiza przykładowego rozwiązania wykazuje pełną zgodność z wymaganiami określonymi w pliku \texttt{polecenie.txt}:
 \begin{enumerate}
     \item \textbf{Zadanie programistyczne}: Zaimplementowano animację 100 elementów graficznych poruszających się po panelu Swing. Dodatkowo, każdy wątek wykonuje intensywne obliczenia matematyczne (\texttt{heavyCalculations}), co pozwala na realne obciążenie CPU.
-    \item \textbf{Implementacja klasyczna}: Metoda \texttt{startClassic()} tworzy listę obiektów \texttt{Thread}, z których każdy zarządza jednym zadaniem.
+    \item \textbf{Implementacja klasyczna}: Metoda \texttt{startThreads()} tworzy listę obiektów \texttt{Thread}, z których każdy zarządza jednym zadaniem.
     \item \textbf{Implementacja wysokopoziomowa}: Metody \texttt{startExecutorService()} oraz \texttt{startScheduled()} wykorzystują pule wątków (\texttt{ThreadPoolExecutor}) o stałym rozmiarze (domyślnie 4).
     \item \textbf{Analiza profilerem}: Przeprowadzono pomiary z wykorzystaniem narzędzia VisualVM 2.2.1 oraz narzędzi systemowych JDK (jstack, jstat).
 \end{enumerate}
 
 \section{Szczegóły Implementacji}
 
-\subsection{Logika Zadania (WorkerTask)}
+\subsection{Logika Zadania (KrokAnimacji)}
 Każde zadanie wykonuje pętlę, w której zamiast pasywnego oczekiwania (\texttt{sleep}), wywoływana jest funkcja obciążająca procesor:
 \begin{lstlisting}
 public static void heavyCalculations() {
     double wynik = 0;
     for (int i = 0; i < 50000; i++) {
-        wynik += Math.sin(i) * Math.cos(i);
+        wynik += Math.sin(i) * Math.tan(i);
     }
 }
 \end{lstlisting}
@@ -84,9 +84,9 @@ To podejście pozwala na badanie stanów wątków w warunkach wysokiej rywalizac
 \subsection{Pula Wątków (ExecutorService)}
 W odróżnieniu od metody klasycznej, gdzie powstaje 100 wątków, w metodzie wysokopoziomowej zadania są kolejkowane do puli 4 wątków.
 \begin{lstlisting}
-executorService = Executors.newFixedThreadPool(4);
-for (MovingElement el : panel.getElements()) {
-    executorService.submit(new WorkerTask(el, panel, this));
+executorService = Executors.newFixedThreadPool(ThreadingProject_P1.pula);
+for (RuchomyElement el : panel.getElements()) {
+    executorService.submit(new KrokAnimacji(el, panel, this));
 }
 \end{lstlisting}
 
