@@ -1,0 +1,6 @@
+//Podsumowując jak ten shit działa: 50 mln dzielimy na 2 potem dalej na 2 potem dalej na 2 itd,
+// az uzyskamy cos mnijeszego niz 10k (dowolnie co). Robi sie  ztego drzewo binarne. Potem z każdego
+//fragmentu drzewa na dole 2 najwieksze.
+//Gdy juz to zrobi dla wszystkich najniższych przeskakuje poziom wyzej i porownuje 2 najwieksze z
+//z dwoma innymi największymi (prawe z lewym). I tak już do samej góry i przez wszystkie poziomy na szerokość
+//PS drzewo nie musi byc symeryczne
